@@ -5,13 +5,11 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\SignupRequest;
-use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 use App\Traits\ApiResponse;
-
 
 class AuthController extends Controller
 {
@@ -28,7 +26,6 @@ class AuthController extends Controller
         $token = JWTAuth::fromUser($user);
 
         return $this->success(['user' => $user, 'token' => $token], 'User register successfully.', 201);
-
     }
 
     public function login(LoginRequest $request)
@@ -39,8 +36,17 @@ class AuthController extends Controller
             return response()->json(['error' => 'Invalid credentials'], 401);
         }
 
-        return $this->success($token, 'User login successfully.', 201);
+        $user = auth()->user();
 
+        return $this->success(
+            [
+                'message' => 'User login successfully.',
+                'user' => $user,
+                'token' => $token,
+            ],
+            'User login successfully.',
+            201,
+        );
     }
 
     public function logout()
