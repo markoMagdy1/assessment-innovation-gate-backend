@@ -23,4 +23,5 @@ Route::middleware('auth:api')
         Route::put('{id}', 'update');
         Route::delete('{id}', 'destroy');
         Route::post('{id}/toggle', 'toggleComplete');
+        Route::post('/{id}/reassign ', 'assign');
     });

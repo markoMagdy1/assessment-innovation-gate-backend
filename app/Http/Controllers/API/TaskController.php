@@ -13,8 +13,8 @@ use App\Traits\ApiResponse;
 class TaskController extends Controller
 {
     use ApiResponse;
-    
-     public function index(Request $request)
+
+    public function index(Request $request)
     {
         $userId = Auth::id();
         if (!$userId) {
@@ -23,8 +23,7 @@ class TaskController extends Controller
 
         $query = Task::query()
             ->where(function ($q) use ($userId) {
-                $q->where('assignee_id', $userId)
-                  ->orWhere('creator_id', $userId);
+                $q->where('assignee_id', $userId)->orWhere('creator_id', $userId);
             })
             ->orderBy('due_date', 'asc');
 
@@ -51,7 +50,7 @@ class TaskController extends Controller
 
         return $this->success($tasks, 'Tasks returned successfully', 200);
     }
-    
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -118,5 +117,32 @@ class TaskController extends Controller
         $task->save();
 
         return response()->json(['message' => 'Task status updated', 'task' => $task]);
+    }
+
+    public function assign(Request $request, $id)
+    {
+        $task = Task::findOrFail($id);
+
+        if ($task->creator_id !== Auth::id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'email' => 'required|email|exists:users,email',
+        ]);
+
+        $assignee = User::where('email', $validated['email'])->firstOrFail();
+
+        $task->assignee_id = $assignee->id;
+        $task->save();
+
+        return $this->success(
+            [
+                'task' => $task,
+                'assignee' => $assignee,
+            ],
+            'Task assigned successfully',
+            200,
+        );
     }
 }
