@@ -20,12 +20,12 @@ class TaskController extends Controller
         if (!$userId) {
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
-
-        $query = Task::query()
+        $query = Task::with('assignee') // eager load assignee relation
             ->where(function ($q) use ($userId) {
                 $q->where('assignee_id', $userId)->orWhere('creator_id', $userId);
             })
             ->orderBy('due_date', 'asc');
+       
 
         if ($request->filled('priority')) {
             $query->where('priority', $request->priority);
