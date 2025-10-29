@@ -13,13 +13,45 @@ use App\Traits\ApiResponse;
 class TaskController extends Controller
 {
     use ApiResponse;
-    public function index()
+    
+     public function index(Request $request)
     {
-        $tasks = Task::where('assignee_id', Auth::id())->orWhere('creator_id', Auth::id())->orderBy('due_date', 'asc')->get();
+        $userId = Auth::id();
+        if (!$userId) {
+            return response()->json(['error' => 'Unauthenticated.'], 401);
+        }
+
+        $query = Task::query()
+            ->where(function ($q) use ($userId) {
+                $q->where('assignee_id', $userId)
+                  ->orWhere('creator_id', $userId);
+            })
+            ->orderBy('due_date', 'asc');
+
+        if ($request->filled('priority')) {
+            $query->where('priority', $request->priority);
+        }
+
+        if ($request->filled('status')) {
+            $status = $request->status;
+            $today = now()->toDateString();
+
+            if ($status === 'Done') {
+                $query->where('is_completed', true);
+            } elseif ($status === 'Due Today') {
+                $query->whereDate('due_date', $today)->where('is_completed', false);
+            } elseif ($status === 'Missed/Late') {
+                $query->whereDate('due_date', '<', $today)->where('is_completed', false);
+            } elseif ($status === 'Pending') {
+                $query->whereDate('due_date', '>', $today)->where('is_completed', false);
+            }
+        }
+
+        $tasks = $query->get();
 
         return $this->success($tasks, 'Tasks returned successfully', 200);
     }
-
+    
     public function store(Request $request)
     {
         $validated = $request->validate([
